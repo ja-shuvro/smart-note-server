@@ -163,10 +163,10 @@ Title: "${title.replace(/"/g, '\\"')}"
 Content: "${content.slice(0, 1500).replace(/"/g, '\\"')}"`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -175,7 +175,7 @@ Content: "${content.slice(0, 1500).replace(/"/g, '\\"')}"`;
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 250,
+            maxOutputTokens: 500,
             responseMimeType: 'application/json',
           },
         }),
