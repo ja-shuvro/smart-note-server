@@ -1,9 +1,10 @@
 import { Post, IPostDocument, PostStatus } from '../models/post-model.js';
+import { User } from '../models/user-model.js';
 import { parsePagination, createPaginationMeta } from '../utils/pagination.js';
 import { PaginationMeta } from '../utils/api-response.js';
 import { CreatePostInput } from '../validations/post-validation.js';
 import { AppError } from '../utils/app-error.js';
-import { Types } from 'mongoose';
+import { Types, PipelineStage } from 'mongoose';
 
 export interface PaginatedPostsResult {
   posts: IPostDocument[];
@@ -22,6 +23,7 @@ export class PostService {
     const post = await Post.create({
       title: input.title,
       content: input.content,
+      tags: input.tags || [],
       authorId,
       status: initialStatus,
       ...(userRole === 'admin'
@@ -69,6 +71,10 @@ export class PostService {
 
     // Build filter based on role and status
     const filter: Record<string, unknown> = {};
+    const userObjectId =
+      currentUserId && Types.ObjectId.isValid(currentUserId)
+        ? new Types.ObjectId(currentUserId)
+        : null;
 
     if (isAdmin) {
       if (statusFilter && statusFilter !== 'all') {
@@ -76,26 +82,86 @@ export class PostService {
       }
     } else {
       // Standard users only see approved posts OR their own pending/submitted posts
-      if (currentUserId) {
-        filter.$or = [{ status: 'approved' }, { authorId: currentUserId }];
+      if (userObjectId) {
+        filter.$or = [{ status: 'approved' }, { authorId: userObjectId }];
       } else {
         filter.status = 'approved';
       }
     }
 
+    // Retrieve user interests for personalized ranking
+    let userInterests: string[] = [];
+    if (userObjectId) {
+      const currentUserDoc = await User.findById(userObjectId).select('interests').lean();
+      if (currentUserDoc?.interests && Array.isArray(currentUserDoc.interests)) {
+        userInterests = currentUserDoc.interests
+          .map((i: string) => (typeof i === 'string' ? i.trim().toLowerCase() : ''))
+          .filter(Boolean);
+      }
+    }
+
+    // Aggregation pipeline: prioritize approved posts matching user's interests, followed by recency
+    const pipeline: PipelineStage[] = [
+      { $match: filter },
+      {
+        $addFields: {
+          matchScore:
+            userInterests.length > 0
+              ? {
+                  $size: {
+                    $setIntersection: [
+                      {
+                        $map: {
+                          input: { $ifNull: ['$tags', []] },
+                          as: 't',
+                          in: { $toLower: { $trim: { input: '$$t' } } },
+                        },
+                      },
+                      userInterests,
+                    ],
+                  },
+                }
+              : 0,
+        },
+      },
+      {
+        $sort: {
+          matchScore: -1,
+          createdAt: -1,
+        },
+      },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'authorId',
+          foreignField: '_id',
+          as: 'authorId',
+          pipeline: [{ $project: { name: 1, email: 1, role: 1 } }],
+        },
+      },
+      { $unwind: { path: '$authorId', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'approvedBy',
+          foreignField: '_id',
+          as: 'approvedBy',
+          pipeline: [{ $project: { name: 1, email: 1 } }],
+        },
+      },
+      { $unwind: { path: '$approvedBy', preserveNullAndEmptyArrays: true } },
+    ];
+
     const [posts, total] = await Promise.all([
-      Post.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate('authorId', 'name email role')
-        .populate('approvedBy', 'name email'),
+      Post.aggregate(pipeline),
       Post.countDocuments(filter),
     ]);
 
     const pagination = createPaginationMeta(total, page, limit);
 
-    return { posts, pagination };
+    return { posts: posts as unknown as IPostDocument[], pagination };
   }
 
   static async deletePost(postId: string, userId: string, isAdmin = false): Promise<void> {

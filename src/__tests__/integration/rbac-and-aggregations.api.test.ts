@@ -170,6 +170,53 @@ describe('RBAC & Aggregations API Endpoints - Integration Tests', () => {
       expect(res.body.data.approvedBy).toBeDefined();
       expect(res.body.data.approvedAt).toBeDefined();
     });
+
+    it('should allow creating post with tags and prioritize feed based on user interests', async () => {
+      // Create unrelated approved post
+      const resUnrelated = await request(app)
+        .post('/api/posts')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          title: `Unrelated Outdoor Post ${timestamp}`,
+          content: 'Going camping in the woods.',
+          tags: ['outdoors', 'hiking'],
+        });
+      expect(resUnrelated.status).toBe(201);
+
+      // Create matching approved post (matches regularUserData.interests: ['javascript', 'testing'])
+      const resMatching = await request(app)
+        .post('/api/posts')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          title: `JavaScript Testing Guide ${timestamp}`,
+          content: 'Modern unit and integration testing patterns in JS.',
+          tags: ['javascript', 'testing'],
+        });
+      expect(resMatching.status).toBe(201);
+
+      // Query posts as regular user
+      const feedRes = await request(app)
+        .get('/api/posts')
+        .set('Authorization', `Bearer ${userToken}`);
+
+      expect(feedRes.status).toBe(200);
+      expect(feedRes.body.success).toBe(true);
+      const posts = feedRes.body.data;
+      expect(posts.length).toBeGreaterThanOrEqual(2);
+
+      // Verify matching post has matchScore > 0 and is prioritized
+      const matchingPost = posts.find((p: any) => p._id === resMatching.body.data._id);
+      const unrelatedPost = posts.find((p: any) => p._id === resUnrelated.body.data._id);
+      expect(matchingPost).toBeDefined();
+      expect(unrelatedPost).toBeDefined();
+      expect(matchingPost.matchScore).toBe(2);
+      expect(unrelatedPost.matchScore).toBe(0);
+
+      // In the feed array, matchingPost must appear before unrelatedPost
+      const matchingIndex = posts.indexOf(matchingPost);
+      const unrelatedIndex = posts.indexOf(unrelatedPost);
+      expect(matchingIndex).toBeLessThan(unrelatedIndex);
+    });
   });
 });
 

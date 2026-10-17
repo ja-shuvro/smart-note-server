@@ -72,6 +72,7 @@ const seed = async () => {
       {
         title: 'Getting started with MongoDB Aggregations',
         content: 'Pipeline stages like $unwind and $lookup unlock deep analytics in NoSQL.',
+        tags: ['coding', 'architecture'],
         authorId: alice._id,
         status: 'approved',
         approvedBy: admin._id,
@@ -80,12 +81,14 @@ const seed = async () => {
       {
         title: 'The Beauty of Chess Endgames',
         content: 'Pawn structures dictate the outcome of master tournaments.',
+        tags: ['chess'],
         authorId: alice._id,
         status: 'pending',
       },
       {
         title: 'Weekend Trail in High Peaks',
         content: 'Climbed 3500 feet elevation today. Breath-taking views from the summit!',
+        tags: ['hiking'],
         authorId: bob._id,
         status: 'approved',
         approvedBy: admin._id,
@@ -94,6 +97,7 @@ const seed = async () => {
       {
         title: 'Photography in Golden Hour',
         content: 'Natural lighting at 6 PM produces unbeatable warm portraits.',
+        tags: ['photography'],
         authorId: charlie._id,
         status: 'pending',
       },

@@ -6,6 +6,7 @@ export interface IPostDocument extends Document {
   _id: Types.ObjectId;
   title: string;
   content: string;
+  tags: string[];
   authorId: Types.ObjectId;
   status: PostStatus;
   approvedBy?: Types.ObjectId;
@@ -24,6 +25,10 @@ const postSchema = new Schema<IPostDocument>(
     content: {
       type: String,
       required: [true, 'Post content is required'],
+    },
+    tags: {
+      type: [String],
+      default: [],
     },
     authorId: {
       type: Schema.Types.ObjectId,
@@ -59,6 +64,9 @@ postSchema.index({ authorId: 1, createdAt: -1 });
 
 // 2. Compound index on status and createdAt to support admin approval queue filtering
 postSchema.index({ status: 1, createdAt: -1 });
+
+// 3. Multikey index on tags array to support interest-based personalized feed filtering
+postSchema.index({ tags: 1 });
 
 export const Post = model<IPostDocument>('Post', postSchema);
 

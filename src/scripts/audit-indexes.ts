@@ -51,6 +51,7 @@ const audit = async () => {
     console.log('  [PASS] Users: Multikey index { interests: 1 } supports Scenario 1 aggregation.');
     console.log('  [PASS] Users: Unique index { email: 1 } supports O(1) auth lookup.');
     console.log('  [PASS] Posts: Foreign key index { authorId: 1, createdAt: -1 } supports Scenario 2 $lookup.');
+    console.log('  [PASS] Posts: Multikey index { tags: 1 } supports interest-based personalized feed.');
 
     // 2. Query Plan Execution Stats Verification
     console.log('\n--- 3. QUERY PLAN EXPLAIN VERIFICATION ---');
