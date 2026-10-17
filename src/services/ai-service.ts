@@ -163,10 +163,10 @@ Title: "${title.replace(/"/g, '\\"')}"
 Content: "${content.slice(0, 1500).replace(/"/g, '\\"')}"`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -175,7 +175,8 @@ Content: "${content.slice(0, 1500).replace(/"/g, '\\"')}"`;
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 150,
+            maxOutputTokens: 250,
+            responseMimeType: 'application/json',
           },
         }),
       }
@@ -208,7 +209,7 @@ Content: "${content.slice(0, 1500).replace(/"/g, '\\"')}"`;
    * Main Entrypoint: attempts Gemini API when key is present, otherwise seamlessly falls back to Local NLP.
    */
   static async suggestTags(title: string, content: string): Promise<ClassificationResult> {
-    const apiKey = env.GEMINI_API_KEY;
+    const apiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 
     if (apiKey && apiKey.trim().length > 0) {
       try {
