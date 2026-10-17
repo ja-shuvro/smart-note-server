@@ -4,6 +4,7 @@ import { userRoutes } from './user-routes.js';
 import { noteRoutes } from './note-routes.js';
 import { postRoutes } from './post-routes.js';
 import { aggregationRoutes } from './aggregation-routes.js';
+import { aiRoutes } from './ai-routes.js';
 import { ApiResponse } from '../utils/api-response.js';
 
 const apiRouter = Router();
@@ -20,5 +21,6 @@ apiRouter.use('/users', userRoutes);
 apiRouter.use('/notes', noteRoutes);
 apiRouter.use('/posts', postRoutes);
 apiRouter.use('/aggregations', aggregationRoutes);
+apiRouter.use('/ai', aiRoutes);
 
 export { apiRouter };
