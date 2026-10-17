@@ -13,3 +13,9 @@ export const connectDatabase = async (): Promise<void> => {
     throw error;
   }
 };
+
+export const disconnectDatabase = async (): Promise<void> => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
+};

@@ -21,8 +21,11 @@ cp .env.example .env
 # Seed database with sample users, notes, and posts
 npm run seed
 
-# Run automated index audit & explain verification
-npm run audit
+# Run automated test suite (Unit & Integration tests)
+npm test
+
+# Run tests in watch mode
+npm run test:watch
 
 # Start backend dev server (Runs on http://localhost:5000)
 npm run dev
