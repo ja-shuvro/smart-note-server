@@ -118,4 +118,58 @@ describe('RBAC & Aggregations API Endpoints - Integration Tests', () => {
       expect(res.body.data.totalPosts).toBe(res.body.data.posts.length);
     });
   });
+
+  describe('Business Workflow: Post Approval & Moderation (/api/posts)', () => {
+    let createdPostId = '';
+
+    it('should create post as pending when created by regular user (201)', async () => {
+      const res = await request(app)
+        .post('/api/posts')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          title: `Pending Post ${timestamp}`,
+          content: 'This post awaits administrative approval.',
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('pending');
+      createdPostId = res.body.data._id;
+    });
+
+    it('should forbid regular user from approving posts (403)', async () => {
+      const res = await request(app)
+        .patch(`/api/posts/${createdPostId}/status`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ status: 'approved' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/forbidden/i);
+    });
+
+    it('should reject invalid status updates (400)', async () => {
+      const res = await request(app)
+        .patch(`/api/posts/${createdPostId}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'super-approved' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should allow admin user to approve post (200)', async () => {
+      const res = await request(app)
+        .patch(`/api/posts/${createdPostId}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'approved' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('approved');
+      expect(res.body.data.approvedBy).toBeDefined();
+      expect(res.body.data.approvedAt).toBeDefined();
+    });
+  });
 });
+

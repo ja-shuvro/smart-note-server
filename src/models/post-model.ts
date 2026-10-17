@@ -1,10 +1,15 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
+export type PostStatus = 'pending' | 'approved' | 'rejected';
+
 export interface IPostDocument extends Document {
   _id: Types.ObjectId;
   title: string;
   content: string;
   authorId: Types.ObjectId;
+  status: PostStatus;
+  approvedBy?: Types.ObjectId;
+  approvedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +30,19 @@ const postSchema = new Schema<IPostDocument>(
       ref: 'User',
       required: [true, 'Post author is required'],
     },
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+      required: true,
+    },
+    approvedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    approvedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -39,4 +57,8 @@ const postSchema = new Schema<IPostDocument>(
 // and retrieving author posts sorted newest first.
 postSchema.index({ authorId: 1, createdAt: -1 });
 
+// 2. Compound index on status and createdAt to support admin approval queue filtering
+postSchema.index({ status: 1, createdAt: -1 });
+
 export const Post = model<IPostDocument>('Post', postSchema);
+

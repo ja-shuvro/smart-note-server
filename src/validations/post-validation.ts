@@ -8,6 +8,14 @@ export const createPostSchema = z.object({
 export const listPostsQuerySchema = z.object({
   page: z.string().optional().default('1'),
   limit: z.string().optional().default('10'),
+  status: z.enum(['pending', 'approved', 'rejected', 'all']).optional(),
+});
+
+export const updatePostStatusSchema = z.object({
+  status: z.enum(['pending', 'approved', 'rejected'], {
+    errorMap: () => ({ message: 'Status must be pending, approved, or rejected' }),
+  }),
 });
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;
+export type UpdatePostStatusInput = z.infer<typeof updatePostStatusSchema>;

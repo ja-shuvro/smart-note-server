@@ -67,29 +67,38 @@ const seed = async () => {
       },
     ]);
 
-    console.log('[Seed] Seeding sample posts for lookup aggregation...');
+    console.log('[Seed] Seeding sample posts for lookup aggregation & approval workflow...');
     await Post.create([
       {
         title: 'Getting started with MongoDB Aggregations',
         content: 'Pipeline stages like $unwind and $lookup unlock deep analytics in NoSQL.',
         authorId: alice._id,
+        status: 'approved',
+        approvedBy: admin._id,
+        approvedAt: new Date(),
       },
       {
         title: 'The Beauty of Chess Endgames',
         content: 'Pawn structures dictate the outcome of master tournaments.',
         authorId: alice._id,
+        status: 'pending',
       },
       {
         title: 'Weekend Trail in High Peaks',
         content: 'Climbed 3500 feet elevation today. Breath-taking views from the summit!',
         authorId: bob._id,
+        status: 'approved',
+        approvedBy: admin._id,
+        approvedAt: new Date(),
       },
       {
         title: 'Photography in Golden Hour',
         content: 'Natural lighting at 6 PM produces unbeatable warm portraits.',
         authorId: charlie._id,
+        status: 'pending',
       },
     ]);
+
 
     console.log('[Seed] Seeding completed successfully!');
     console.log('[Seed] Default Credentials:');
